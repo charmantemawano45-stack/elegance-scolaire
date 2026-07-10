@@ -1,0 +1,77 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>Élégance Scolaire | Portail Résultats</title>
+  <!-- Police luxueuse & icônes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="ecola.css">
+</head>
+<body>
+<div class="platform" id="appContainer">
+  <!-- LOGIN (affiché par défaut) -->
+  <div id="loginSection" class="login-container">
+    <h1>Élégance Scolaire</h1>
+    <div class="subtitle">Portail des résultats</div>
+    <div class="input-group">
+      <label>Identifiant</label>
+      <input type="text" id="loginId" class="lux-input" placeholder="ID admin ou élève" autocomplete="off">
+    </div>
+    <div class="input-group">
+      <label>Mot de passe</label>
+      <input type="password" id="loginPassword" class="lux-input" placeholder="••••••••">
+    </div>
+    <button class="btn-lux" id="loginBtn"><i class="fas fa-sign-in-alt"></i> Se connecter</button>
+    <div id="loginError" class="error-message"></div>
+    <p style="margin-top:1.5rem; font-size:0.8rem; color:#456776;"></p>
+  </div>
+
+  <!-- SECTION ADMIN -->
+  <div id="adminSection" class="admin-panel hidden">
+    <div class="dashboard-header">
+      <span class="brand"><i class="fas fa-user-shield" style="margin-right:8px;"></i>Administration</span>
+      <button class="logout-btn" id="adminLogout"><i class="fas fa-sign-out-alt"></i> Déconnexion</button>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:1.2rem; color:#345665;">Générer un compte élève</h2>
+      <div class="flex-row">
+        <input type="text" id="studentName" class="lux-input" placeholder="Nom complet de l'élève" style="flex:2;">
+        <input type="text" id="studentClass" class="lux-input" placeholder="Classe (ex: 6ème A)" style="flex:1;">
+      </div>
+      <button class="btn-lux" id="generateStudentBtn" style="margin-top:1rem; width:auto; padding:0.8rem 2.2rem;">
+        <i class="fas fa-plus-circle"></i> Créer identifiant
+      </button>
+      <div id="generatedCredentials" style="margin-top:1.2rem; background:#f0f5f3; padding:1rem; border-radius:1.2rem; display:none;">
+        <span style="font-weight:600;">ID : </span><span id="newId"></span><br>
+        <span style="font-weight:600;">Mot de passe : </span><span id="newPass"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="color:#345665;">Liste des élèves & saisie des résultats</h2>
+      <div id="studentListContainer">
+        <p style="color:#456776;">Aucun élève pour le moment.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION PARENT / ÉLÈVE -->
+  <div id="parentSection" class="parent-space hidden">
+    <div class="dashboard-header">
+      <span class="brand"><i class="fas fa-graduation-cap"></i> Espace Parents</span>
+      <button class="logout-btn" id="parentLogout"><i class="fas fa-sign-out-alt"></i> Déconnexion</button>
+    </div>
+    <div id="parentContent" class="card">
+      <!-- Dynamiquement rempli -->
+    </div>
+  </div>
+</div>
+
+<script src="ecole.js"></script>
+</body>
+</html>

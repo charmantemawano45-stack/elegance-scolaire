@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>UPC Pay · Simulation Intégration Bancaire</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at 20% 30%, #13294b, #0a121f);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      color: #edf2fb;
+    }
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      background: rgba(18, 30, 48, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(66, 140, 255, 0.2);
+      border-radius: 40px;
+      box-shadow: 0 30px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
+      padding: 28px 22px;
+      transition: all 0.2s;
+    }
+    h1, h2, h3 {
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    h1 {
+      font-size: 2rem;
+      background: linear-gradient(135deg, #c6ddff, #6ea8fe);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 6px;
+    }
+    .glass-panel {
+      background: rgba(12, 24, 40, 0.5);
+      border-radius: 28px;
+      padding: 20px 18px;
+      border: 1px solid #2c4a6e;
+      backdrop-filter: blur(8px);
+      margin-bottom: 18px;
+    }
+    .flex-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .input-field {
+      background: #0b1625;
+      border: 1.5px solid #2e4b70;
+      border-radius: 20px;
+      padding: 14px 18px;
+      font-size: 1rem;
+      color: white;
+      width: 100%;
+      outline: none;
+      transition: border 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .input-field:focus {
+      border-color: #3f8cff;
+      box-shadow: 0 0 0 3px rgba(63,140,255,0.2);
+    }
+    .input-field::placeholder {
+      color: #7f9bc0;
+      font-weight: 300;
+    }
+    .btn {
+      background: #1d4ed8;
+      border: none;
+      border-radius: 24px;
+      padding: 14px 20px;
+      font-weight: 600;
+      font-size: 1rem;
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid #3f74d1;
+      box-shadow: 0 8px 16px -6px #0e1e32;
+      width: 100%;
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid #3f74d1;
+      box-shadow: none;
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      pointer-events: none;
+      filter: grayscale(0.4);
+    }
+    .btn-small {
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      width: auto;
+    }
+    .avatar-upload {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .avatar-preview {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: #1e3a5f;
+      border: 3px solid #4f8eff;
+      object-fit: cover;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234f8eff"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>');
+      background-size: 60%;
+      background-position: center 55%;
+      background-repeat: no-repeat;
+    }
+    .tab-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 12px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 500;
+      border: 1px solid transparent;
+      transition: 0.2s;
+    }
+    .tab.active {
+      background: #1d4ed8;
+      border-color: #6ea8fe;
+    }
+    .page {
+      display: none;
+    }
+    .page.active {
+      display: block;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #132337;
+      border-radius: 36px;
+      padding: 28px 22px;
+      max-width: 420px;
+      width: 90%;
+      border: 1px solid #3f6eb3;
+      box-shadow: 0 30px 50px #00000055;
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .qr-container {
+      background: white;
+      padding: 12px;
+      border-radius: 24px;
+      display: inline-block;
+      margin: 10px 0;
+    }
+    .status-badge {
+      background: #1e4620;
+      color: #a3e9a4;
+      padding: 4px 14px;
+      border-radius: 40px;
+      font-size: 0.8rem;
+    }
+    .log-box {
+      background: #030a12;
+      border-radius: 18px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      max-height: 140px;
+      overflow-y: auto;
+      border: 1px solid #1f405e;
+      margin-top: 16px;
+    }
+    .amount-large {
+      font-size: 2.5rem;
+      font-weight: 700;
+    }
+    .divider {
+      height: 1px;
+      background: #2c4a6e;
+      margin: 18px 0;
+    }
+    i {
+      margin-right: 6px;
+    }
+    /* Styles pour la liste des reçus (inspiré Illicocash) */
+    .receipt-item {
+      background: rgba(18, 35, 55, 0.7);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-left: 4px solid #2ecc71;
+      backdrop-filter: blur(4px);
+    }
+    .receipt-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .receipt-amount {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #a3e9a4;
+    }
+    .receipt-qr {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .nav-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .nav-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid #2c4a6e;
+      border-radius: 30px;
+      padding: 10px 16px;
+      color: white;
+      cursor: pointer;
+      flex: 1;
+      text-align: center;
+      transition: 0.2s;
+    }
+    .nav-btn.active {
+      background: #1d4ed8;
+      border-color: #6ea8fe;
+    }
+  </style>
+</head>
+<body>
+<div class="app-container" id="appContainer">
+  <!-- ========== PAGE AUTHENTIFICATION ========== -->
+  <div id="authPage" class="page active">
+    <h1>🎓 UPC · Rawbank</h1>
+    <p style="margin-bottom: 20px; opacity: 0.8;">Paiement académique simplifié</p>
+    
+    <div class="tab-bar">
+      <div class="tab active" data-tab="signin">Connexion</div>
+      <div class="tab" data-tab="signup">Inscription</div>
+    </div>
+
+    <!-- Sign In -->
+    <div id="signinForm" class="glass-panel">
+      <h2 style="margin-bottom: 18px;"><i class="fas fa-sign-in-alt"></i> Se connecter</h2>
+      <div style="margin-bottom: 16px;">
+        <i class="fas fa-id-card"></i> Matricule
+        <input type="text" id="loginMatricule" class="input-field" placeholder="ex: 22UPC123" value="">
+      </div>
+      <div style="margin-bottom: 22px;">
+        <i class="fas fa-lock"></i> Mot de passe
+        <input type="password" id="loginPassword" class="input-field" placeholder="••••••••">
+      </div>
+      <button class="btn" id="loginBtn"><i class="fas fa-arrow-right-to-bracket"></i> Connexion</button>
+      <div id="loginError" style="color: #ff8a8a; margin-top: 10px;"></div>
+    </div>
+
+    <!-- Sign Up -->
+    <div id="signupForm" class="glass-panel" style="display: none;">
+      <h2 style="margin-bottom: 18px;"><i class="fas fa-user-plus"></i> Créer un compte</h2>
+      <div style="margin-bottom: 12px;"><input type="text" id="signupNom" class="input-field" placeholder="Nom"></div>
+      <div style="margin-bottom: 12px;"><input type="text" id="signupPostnom" class="input-field" placeholder="Postnom"></div>
+      <div style="margin-bottom: 12px;"><input type="text" id="signupPrenom" class="input-field" placeholder="Prénom"></div>
+      <div style="margin-bottom: 12px;"><input type="password" id="signupPassword" class="input-field" placeholder="Mot de passe"></div>
+      <div style="margin-bottom: 20px;"><input type="password" id="signupConfirm" class="input-field" placeholder="Confirmer mot de passe"></div>
+      <button class="btn" id="signupBtn"><i class="fas fa-user-check"></i> S'inscrire</button>
+      <div id="signupError" style="color: #ff8a8a; margin-top: 10px;"></div>
+    </div>
+  </div>
+
+  <!-- ========== PAGE DASHBOARD ========== -->
+  <div id="dashboardPage" class="page">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h1 style="font-size: 1.8rem;">Tableau de bord</h1>
+      <button class="btn-outline btn-small" id="logoutBtn" style="width: auto;"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+
+    <!-- Navigation entre Dashboard et Reçus -->
+    <div class="nav-buttons">
+      <div class="nav-btn active" data-view="dashboard">🏠 Accueil</div>
+      <div class="nav-btn" data-view="receipts">🧾 Mes reçus</div>
+    </div>
+
+    <!-- Vue Dashboard -->
+    <div id="dashboardView">
+      <div class="glass-panel">
+        <div class="avatar-upload">
+          <img id="profileAvatar" class="avatar-preview" src="" alt="avatar">
+          <div>
+            <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+            <button class="btn-outline btn-small" id="uploadAvatarBtn"><i class="fas fa-camera"></i> Changer photo</button>
+          </div>
+        </div>
+        <div style="margin-top: 16px;">
+          <h2 id="studentFullName">--</h2>
+          <p><i class="fas fa-id-card"></i> Matricule: <span id="studentMatricule">--</span></p>
+          <p><i class="fas fa-graduation-cap"></i> Promotion: L2 Informatique</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div style="display: flex; justify-content: space-between;">
+          <span><i class="fas fa-wallet"></i> Frais académiques</span>
+          <span class="status-badge">2025-2026</span>
+        </div>
+        <div class="amount-large" style="margin: 10px 0;" id="totalDue">250.00 $</div>
+        <div style="display: flex; justify-content: space-between; font-size: 1.1rem;">
+          <span>Payé: <span id="amountPaid">0.00 $</span></span>
+          <span>Reste: <span id="amountRemaining">250.00 $</span></span>
+        </div>
+        <button class="btn" style="margin-top: 24px;" id="payNowBtn"><i class="fas fa-credit-card"></i> Payer maintenant</button>
+      </div>
+
+      <div class="log-box" id="dashboardLogs">
+        <i class="fas fa-list"></i> Prêt pour paiement.
+      </div>
+    </div>
+
+    <!-- Vue Reçus -->
+    <div id="receiptsView" style="display: none;">
+      <div class="glass-panel">
+        <h2 style="margin-bottom: 16px;"><i class="fas fa-receipt"></i> Historique des paiements</h2>
+        <div id="receiptsList">
+          <!-- Généré dynamiquement -->
+        </div>
+        <div id="noReceiptsMsg" style="text-align: center; opacity: 0.7; padding: 20px;">
+          Aucun reçu pour le moment.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL PAIEMENT ========== -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal-content">
+    <h2 style="margin-bottom: 20px;"><i class="fas fa-hand-holding-dollar"></i> Effectuer un paiement</h2>
+    <div id="paymentStep1">
+      <div style="margin-bottom: 16px;">
+        <label>Montant à payer ($)</label>
+        <input type="number" id="paymentAmount" class="input-field" min="0.01" step="0.01" value="250.00">
+      </div>
+      <div style="margin-bottom: 16px;">
+        <label>Méthode de paiement</label>
+        <select id="paymentMethod" class="input-field">
+          <option value="Illicocash">Illicocash (Rawbank)</option>
+          <option value="Orange Money">Orange Money</option>
+          <option value="M-Pesa">M-Pesa</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 20px;">
+        <label>Numéro de téléphone</label>
+        <input type="tel" id="phoneNumber" class="input-field" placeholder="+243 8xx xxx xxx">
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-outline" id="cancelPaymentBtn" style="flex:1;">Annuler</button>
+        <button class="btn" id="initiatePaymentBtnModal" style="flex:1;">Payer</button>
+      </div>
+    </div>
+    <div id="paymentStep2" style="display: none; text-align: center;">
+      <div class="spinner" style="margin: 20px auto;"></div>
+      <p>Traitement de la demande de paiement...</p>
+      <p class="log-box" style="margin-top: 10px;" id="paymentProgress">Connexion à Rawbank...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL CONFIRMATION MOBILE MONEY ========== -->
+<div class="modal-overlay" id="mobileConfirmModal">
+  <div class="modal-content">
+    <h3><i class="fas fa-mobile-screen"></i> Confirmation Mobile Money</h3>
+    <p id="mobileConfirmText">Un paiement de <span id="confirmAmount"></span> $ via <span id="confirmMethod"></span>.</p>
+    <div style="margin: 20px 0;">
+      <label>Entrez votre mot de passe Mobile Money</label>
+      <input type="password" id="mobilePassword" class="input-field" placeholder="••••••">
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn-outline" id="cancelMobileBtn">Annuler</button>
+      <button class="btn" id="confirmMobileBtn">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL REÇU FINAL ========== -->
+<div class="modal-overlay" id="receiptModal">
+  <div class="modal-content">
+    <h2 style="text-align: center;"><i class="fas fa-circle-check" style="color: #2ecc71;"></i> Paiement réussi</h2>
+    <div style="text-align: center; margin: 16px 0;" id="receiptContent"></div>
+    <button class="btn" id="closeReceiptBtn">Fermer</button>
+  </div>
+</div>
+
+<script>
+  (function(){
+    "use strict";
+
+    // ---------- STORAGE & STATE ----------
+    let users = JSON.parse(localStorage.getItem('upc_users')) || [];
+    let currentUser = JSON.parse(localStorage.getItem('upc_currentUser')) || null;
+    let transactions = JSON.parse(localStorage.getItem('upc_transactions')) || [];
+    
+    const DEFAULT_FEES = 250.00;
+    let paidAmount = 0;
+
+    // Éléments DOM
+    const authPage = document.getElementById('authPage');
+    const dashboardPage = document.getElementById('dashboardPage');
+    const signinFormDiv = document.getElementById('signinForm');
+    const signupFormDiv = document.getElementById('signupForm');
+    const tabs = document.querySelectorAll('.tab');
+    
+    // Auth inputs
+    const loginMatricule = document.getElementById('loginMatricule');
+    const loginPassword = document.getElementById('loginPassword');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    const signupNom = document.getElementById('signupNom');
+    const signupPostnom = document.getElementById('signupPostnom');
+    const signupPrenom = document.getElementById('signupPrenom');
+    const signupPassword = document.getElementById('signupPassword');
+    const signupConfirm = document.getElementById('signupConfirm');
+    const signupBtn = document.getElementById('signupBtn');
+    const signupError = document.getElementById('signupError');
+    
+    // Dashboard
+    const studentFullName = document.getElementById('studentFullName');
+    const studentMatricule = document.getElementById('studentMatricule');
+    const totalDueSpan = document.getElementById('totalDue');
+    const amountPaidSpan = document.getElementById('amountPaid');
+    const amountRemainingSpan = document.getElementById('amountRemaining');
+    const profileAvatar = document.getElementById('profileAvatar');
+    const avatarInput = document.getElementById('avatarInput');
+    const uploadAvatarBtn = document.getElementById('uploadAvatarBtn');
+    const payNowBtn = document.getElementById('payNowBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const dashboardLogs = document.getElementById('dashboardLogs');
+    
+    // Navigation vues
+    const navBtns = document.querySelectorAll('.nav-btn');
+    const dashboardView = document.getElementById('dashboardView');
+    const receiptsView = document.getElementById('receiptsView');
+    const receiptsList = document.getElementById('receiptsList');
+    const noReceiptsMsg = document.getElementById('noReceiptsMsg');
+    
+    // Modals
+    const paymentModal = document.getElementById('paymentModal');
+    const paymentStep1 = document.getElementById('paymentStep1');
+    const paymentStep2 = document.getElementById('paymentStep2');
+    const paymentAmount = document.getElementById('paymentAmount');
+    const paymentMethod = document.getElementById('paymentMethod');
+    const phoneNumber = document.getElementById('phoneNumber');
+    const initiatePaymentBtnModal = document.getElementById('initiatePaymentBtnModal');
+    const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
+    const paymentProgress = document.getElementById('paymentProgress');
+    
+    const mobileConfirmModal = document.getElementById('mobileConfirmModal');
+    const confirmAmountSpan = document.getElementById('confirmAmount');
+    const confirmMethodSpan = document.getElementById('confirmMethod');
+    const mobilePassword = document.getElementById('mobilePassword');
+    const confirmMobileBtn = document.getElementById('confirmMobileBtn');
+    const cancelMobileBtn = document.getElementById('cancelMobileBtn');
+    
+    const receiptModal = document.getElementById('receiptModal');
+    const receiptContent = document.getElementById('receiptContent');
+    const closeReceiptBtn = document.getElementById('closeReceiptBtn');
+    
+    let pendingPaymentData = null;
+    let currentTransactionId = null;
+
+    // ---------- UTILITAIRES ----------
+    function saveUsers() { localStorage.setItem('upc_users', JSON.stringify(users)); }
+    function saveCurrentUser() { localStorage.setItem('upc_currentUser', JSON.stringify(currentUser)); }
+    function saveTransactions() { localStorage.setItem('upc_transactions', JSON.stringify(transactions)); }
+    
+    function addLog(message, container = dashboardLogs) {
+      const p = document.createElement('div');
+      p.innerHTML = `<i class="fas fa-chevron-right"></i> ${new Date().toLocaleTimeString()} - ${message}`;
+      container.appendChild(p);
+      container.scrollTop = container.scrollHeight;
+      if (container.children.length > 5) container.removeChild(container.children[0]);
+    }
+    
+    function updateDashboardUI() {
+      if (!currentUser) return;
+      const user = users.find(u => u.matricule === currentUser.matricule);
+      if (user) {
+        studentFullName.textContent = `${user.prenom} ${user.nom} ${user.postnom || ''}`;
+        studentMatricule.textContent = user.matricule;
+        if (user.photo) profileAvatar.src = user.photo;
+        else profileAvatar.src = '';
+      }
+      const userTx = transactions.filter(tx => tx.matricule === currentUser.matricule && tx.status === 'success');
+      paidAmount = userTx.reduce((sum, tx) => sum + tx.amount, 0);
+      const remaining = Math.max(0, DEFAULT_FEES - paidAmount);
+      totalDueSpan.textContent = `${DEFAULT_FEES.toFixed(2)} $`;
+      amountPaidSpan.textContent = `${paidAmount.toFixed(2)} $`;
+      amountRemainingSpan.textContent = `${remaining.toFixed(2)} $`;
+      paymentAmount.value = remaining.toFixed(2);
+    }
+    
+    function renderReceipts() {
+      if (!currentUser) return;
+      const userTx = transactions.filter(tx => tx.matricule === currentUser.matricule && tx.status === 'success');
+      if (userTx.length === 0) {
+        receiptsList.innerHTML = '';
+        noReceiptsMsg.style.display = 'block';
+        return;
+      }
+      noReceiptsMsg.style.display = 'none';
+      let html = '';
+      userTx.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(tx => {
+        const date = new Date(tx.date).toLocaleString();
+        const qrData = JSON.stringify({ matricule: tx.matricule, montant: tx.amount, transaction: tx.id, date });
+        html += `
+          <div class="receipt-item">
+            <div class="receipt-header">
+              <span><i class="fas fa-calendar"></i> ${date}</span>
+              <span class="receipt-amount">${tx.amount.toFixed(2)} $</span>
+            </div>
+            <div><i class="fas fa-${tx.method === 'Illicocash' ? 'building-columns' : 'mobile-screen'}"></i> ${tx.method}</div>
+            <div><i class="fas fa-hashtag"></i> ${tx.id}</div>
+            <div class="receipt-qr">
+              <canvas id="qr-${tx.id}" width="80" height="80" style="background:white; border-radius:12px; padding:4px;"></canvas>
+              <div style="font-size:0.8rem;"><i class="fas fa-check-circle" style="color:#2ecc71;"></i> Validé</div>
+            </div>
+          </div>
+        `;
+      });
+      receiptsList.innerHTML = html;
+      // Générer les QR codes après insertion
+      userTx.forEach(tx => {
+        const canvas = document.getElementById(`qr-${tx.id}`);
+        if (canvas) {
+          QRCode.toCanvas(canvas, JSON.stringify({ 
+            matricule: tx.matricule, 
+            montant: tx.amount, 
+            transaction: tx.id,
+            date: tx.date
+          }), { width: 80 });
+        }
+      });
+    }
+    
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+    }
+    
+    function logout() {
+      currentUser = null;
+      saveCurrentUser();
+      showPage('authPage');
+    }
+    
+    function generateMatricule() {
+      const year = new Date().getFullYear().toString().slice(-2);
+      const random = Math.floor(1000 + Math.random() * 9000);
+      return `${year}UPC${random}`;
+    }
+    
+    // ---------- AUTHENTIFICATION ----------
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        if (tab.dataset.tab === 'signin') {
+          signinFormDiv.style.display = 'block';
+          signupFormDiv.style.display = 'none';
+        } else {
+          signinFormDiv.style.display = 'none';
+          signupFormDiv.style.display = 'block';
+        }
+        loginError.textContent = signupError.textContent = '';
+      });
+    });
+    
+    // Signup
+    signupBtn.addEventListener('click', async () => {
+      const nom = signupNom.value.trim();
+      const postnom = signupPostnom.value.trim();
+      const prenom = signupPrenom.value.trim();
+      const pwd = signupPassword.value;
+      const confirm = signupConfirm.value;
+      if (!nom || !prenom || !pwd) {
+        signupError.textContent = 'Veuillez remplir tous les champs obligatoires';
+        return;
+      }
+      if (pwd !== confirm) {
+        signupError.textContent = 'Les mots de passe ne correspondent pas';
+        return;
+      }
+      signupBtn.disabled = true;
+      signupBtn.innerHTML = '<span class="spinner"></span> Création...';
+      
+      await new Promise(r => setTimeout(r, 5000));
+      
+      const matricule = generateMatricule();
+      const newUser = { matricule, nom, postnom, prenom, password: pwd, photo: null };
+      users.push(newUser);
+      saveUsers();
+      
+      alert(`✅ Compte créé ! Votre matricule: ${matricule}\nUn QR code a été généré (simulation).`);
+      
+      signupBtn.disabled = false;
+      signupBtn.innerHTML = '<i class="fas fa-user-check"></i> S\'inscrire';
+      signupNom.value = signupPostnom.value = signupPrenom.value = signupPassword.value = signupConfirm.value = '';
+      document.querySelector('[data-tab="signin"]').click();
+    });
+    
+    // Signin avec chargement 15s
+    loginBtn.addEventListener('click', async () => {
+      const mat = loginMatricule.value.trim();
+      const pwd = loginPassword.value;
+      const user = users.find(u => u.matricule === mat && u.password === pwd);
+      
+      if (user) {
+        loginBtn.disabled = true;
+        const originalText = loginBtn.innerHTML;
+        loginBtn.innerHTML = '<span class="spinner"></span> Connexion en cours...';
+        loginError.textContent = '';
+        
+        await new Promise(resolve => setTimeout(resolve, 15000));
+        
+        currentUser = { matricule: user.matricule };
+        saveCurrentUser();
+        updateDashboardUI();
+        renderReceipts();
+        addLog(`Connexion réussie. Bienvenue ${user.prenom}`, dashboardLogs);
+        showPage('dashboardPage');
+        
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = originalText;
+      } else {
+        loginError.textContent = 'Matricule ou mot de passe incorrect';
+      }
+    });
+    
+    // Avatar
+    uploadAvatarBtn.addEventListener('click', () => avatarInput.click());
+    avatarInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          profileAvatar.src = ev.target.result;
+          const user = users.find(u => u.matricule === currentUser.matricule);
+          if (user) { user.photo = ev.target.result; saveUsers(); }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    logoutBtn.addEventListener('click', logout);
+    
+    // Navigation interne Dashboard / Reçus
+    navBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        navBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (btn.dataset.view === 'dashboard') {
+          dashboardView.style.display = 'block';
+          receiptsView.style.display = 'none';
+        } else {
+          dashboardView.style.display = 'none';
+          receiptsView.style.display = 'block';
+          renderReceipts();
+        }
+      });
+    });
+    
+    // ---------- PAIEMENT ----------
+    function openPaymentModal() {
+      updateDashboardUI();
+      paymentStep1.style.display = 'block';
+      paymentStep2.style.display = 'none';
+      paymentModal.style.display = 'flex';
+    }
+    
+    payNowBtn.addEventListener('click', openPaymentModal);
+    cancelPaymentBtn.addEventListener('click', () => paymentModal.style.display = 'none');
+    
+    initiatePaymentBtnModal.addEventListener('click', async () => {
+      const amount = parseFloat(paymentAmount.value);
+      if (isNaN(amount) || amount <= 0) { alert('Montant invalide'); return; }
+      const remaining = DEFAULT_FEES - paidAmount;
+      if (amount > remaining) { alert('Montant supérieur au solde dû'); return; }
+      
+      const method = paymentMethod.value;
+      const phone = phoneNumber.value.trim();
+      if (!phone) { alert('Numéro de téléphone requis'); return; }
+      
+      // Validation du numéro selon l'opérateur
+      const phoneRegex = /^\+243(\d{9})$/;
+      const phoneMatch = phone.match(phoneRegex);
+      if (!phoneMatch) {
+        alert('Format de numéro invalide. Utilisez +243 suivi de 9 chiffres.');
+        return;
+      }
+      const prefix = phoneMatch[1].substring(0, 2);
+      let validPrefixes = [];
+      if (method === 'Illicocash' || method === 'Orange Money') {
+        validPrefixes = ['89', '85', '84'];
+      } else if (method === 'M-Pesa') {
+        validPrefixes = ['81', '82', '83', '86'];
+      }
+      if (!validPrefixes.includes(prefix)) {
+        alert(`Numéro non valide pour ${method}. Préfixes acceptés : ${validPrefixes.join(', ')}`);
+        return;
+      }
+      
+      paymentStep1.style.display = 'none';
+      paymentStep2.style.display = 'block';
+      paymentProgress.innerHTML = 'Connexion à la passerelle mobile money...';
+      
+      for (let i = 1; i <= 10; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        paymentProgress.innerHTML = `Étape ${i}/10 : ${i<5?'Authentification':'Préparation transaction'}...`;
+      }
+      
+      pendingPaymentData = { amount, method, phone };
+      paymentModal.style.display = 'none';
+      
+      confirmAmountSpan.textContent = amount.toFixed(2);
+      confirmMethodSpan.textContent = method;
+      mobileConfirmModal.style.display = 'flex';
+      mobilePassword.value = '';
+    });
+    
+    cancelMobileBtn.addEventListener('click', () => {
+      mobileConfirmModal.style.display = 'none';
+      pendingPaymentData = null;
+    });
+    
+    confirmMobileBtn.addEventListener('click', async () => {
+      const pwd = mobilePassword.value;
+      if (!pwd) { alert('Veuillez entrer le mot de passe'); return; }
+      
+      mobileConfirmModal.style.display = 'none';
+      
+      addLog(`🔍 Vérification matricule ${currentUser.matricule}...`, dashboardLogs);
+      
+      const txId = 'RB-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+      currentTransactionId = txId;
+      addLog(`🏦 Transaction Rawbank initiée: ${txId}`, dashboardLogs);
+      
+      await new Promise(r => setTimeout(r, 2000));
+      
+      addLog(`📨 Webhook Rawbank reçu: SUCCESS`, dashboardLogs);
+      
+      const newTx = {
+        id: txId,
+        matricule: currentUser.matricule,
+        amount: pendingPaymentData.amount,
+        method: pendingPaymentData.method,
+        date: new Date().toISOString(),
+        status: 'success'
+      };
+      transactions.push(newTx);
+      saveTransactions();
+      
+      updateDashboardUI();
+      renderReceipts(); // Mise à jour de la liste des reçus
+      
+      const user = users.find(u => u.matricule === currentUser.matricule);
+      const receiptData = {
+        matricule: user.matricule,
+        nom: `${user.prenom} ${user.nom}`,
+        montant: pendingPaymentData.amount,
+        date: new Date().toLocaleString(),
+        transaction: txId
+      };
+      
+      receiptContent.innerHTML = `
+        <div style="background:white; padding:16px; border-radius:24px; color:#0a121f;">
+          <h3>Reçu officiel UPC</h3>
+          <p><strong>${receiptData.nom}</strong><br>Matricule: ${receiptData.matricule}</p>
+          <p>Montant payé: ${receiptData.montant.toFixed(2)} $<br>Date: ${receiptData.date}</p>
+          <p>Transaction: ${receiptData.transaction}</p>
+          <div id="receiptQR" style="margin:10px 0;"></div>
+          <p style="font-size:0.8rem;"><i class="fas fa-lock"></i> Signature numérique SHA-256</p>
+        </div>
+      `;
+      QRCode.toCanvas(document.getElementById('receiptQR'), JSON.stringify(receiptData), { width: 150 });
+      
+      receiptModal.style.display = 'flex';
+      pendingPaymentData = null;
+      
+      addLog(`✅ Paiement de ${newTx.amount.toFixed(2)}$ effectué. Reçu généré.`, dashboardLogs);
+    });
+    
+    closeReceiptBtn.addEventListener('click', () => receiptModal.style.display = 'none');
+    
+    window.addEventListener('click', (e) => {
+      if (e.target === paymentModal) paymentModal.style.display = 'none';
+      if (e.target === mobileConfirmModal) mobileConfirmModal.style.display = 'none';
+      if (e.target === receiptModal) receiptModal.style.display = 'none';
+    });
+    
+    // Initialisation
+    if (currentUser) {
+      updateDashboardUI();
+      renderReceipts();
+      showPage('dashboardPage');
+    } else {
+      showPage('authPage');
+    }
+    
+    // Utilisateur de test
+    if (users.length === 0) {
+      const testUser = {
+        matricule: '22UPC1234',
+        nom: 'MULUMBA',
+        postnom: 'KASONGO',
+        prenom: 'Gloire',
+        password: 'test123',
+        photo: null
+      };
+      users.push(testUser);
+      saveUsers();
+    }
+  })();
+</script>
+</body>
+</html>
